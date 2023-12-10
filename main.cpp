@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <time.h>
 #include <iostream>
+#include <array>
+#include <algorithm>
 
 typedef struct _Point
 {
@@ -13,18 +15,19 @@ void logAbsolutePosition(const sf::Sprite &, int);
 bool arePointsEqual(Point, Point);
 Point rotatePoint(Point, Point);
 Point rotatePoint(Point, Point, bool);
-bool check();
-void setUpShape(int);
+bool check(const std::array<Point, 4> &);
+void setUpShape(sf::Sprite &, int, std::array<Point, 4> &);
 
-Point a[4];
-Point b[4];
+// Point a[4];
+// Point b[4];
 
 const int M = 30;
 const int N = 18;
 
 int field[M][N] = {0};
 
-const int figures[7][4] = {
+const int figures[8][4] = {
+    0, 0, 0, 0, // no shape for index zero
     1, 3, 5, 7, // Incest (see:Rudi Guiliani)
     2, 4, 5, 7, // Z
     3, 4, 5, 6, // S
@@ -36,6 +39,8 @@ const int figures[7][4] = {
 
 int main(void)
 {
+    std::array<Point, 4> a = {};
+    std::array<Point, 4> b = {};
     srand(time(0));
     int dx = 0;
     int dy = 0;
@@ -105,7 +110,7 @@ int main(void)
             a[i].y += dy;
         }
 
-        if (!check())
+        if (!check(a))
             for (int i = 0; i < 4; i++)
                 a[i] = b[i];
 
@@ -118,7 +123,7 @@ int main(void)
             {
                 a[i] = rotatePoint(a[i], p, rotateRight);
             }
-            if (!check())
+            if (!check(a))
                 for (int i = 0; i < 4; i++)
                     a[i] = b[i];
         }
@@ -135,13 +140,13 @@ int main(void)
                 logRelativeSquarePosition(3, a[i], "A pre");
                 logRelativeSquarePosition(3, b[i], "B pre");
             }
-            if (!check())
+            if (!check(a))
             {
                 for (int i = 0; i < 4; i++)
                     field[b[i].y][b[i].x] = colorNum;
 
                 colorNum = 1 + rand() % 7;
-                setUpShape(colorNum);
+                setUpShape(s, colorNum, a);
             }
             timer = 0.0f;
         }
@@ -149,7 +154,7 @@ int main(void)
         if (!initialised)
         {
             initialised = true;
-            setUpShape(colorNum);
+            setUpShape(s, colorNum, a);
         }
         dx = 0;
         dy = 0;
@@ -164,16 +169,19 @@ int main(void)
             {
                 if (field[y][x] == 0)
                     continue;
-                s.setPosition(x * 18.f, y * 18.f);
+
+                s.setTextureRect(sf::IntRect(field[y][x] * 18, 0, 18, 18));
+                s.setPosition((float)x * 18.f, (float)y * 18.f);
                 window.draw(s);
             }
         }
 
         for (int i = 0; i < 4; i++)
         {
-            s.setPosition(a[i].x * 18.f, a[i].y * 18.f);
+            s.setPosition((float)a[i].x * 18.f, (float)a[i].y * 18.f);
             if (keyPressed)
                 logAbsolutePosition(s, i);
+            s.setTextureRect(sf::IntRect(colorNum * 18, 0, 18, 18));
             window.draw(s);
         }
         keyPressed = false;
@@ -184,27 +192,48 @@ int main(void)
     return 0;
 }
 
-bool check()
+bool check(const std::array<Point, 4> &pointA)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (a[i].x < 0 || a[i].x >= N || a[i].y >= M)
+        if (pointA[i].x < 0 || pointA[i].x >= N || pointA[i].y >= M)
             return false;
-        else if (field[a[i].y][a[i].x])
+        else if (field[pointA[i].y][pointA[i].x])
             return false;
     }
 
     return true;
 }
 
+/**
+ * Rotates a point around another point.
+ *
+ * @param p The point to be rotated.
+ * @param around The point around which the rotation occurs.
+ *
+ * @return The rotated point.
+ *
+ * @throws None.
+ */
 Point rotatePoint(Point p, Point around)
 {
     return rotatePoint(p, around, true);
 }
 
+/**
+ * Rotates a point around another point either to the right or left.
+ *
+ * @param p The point to be rotated.
+ * @param around The point to rotate around.
+ * @param right A boolean indicating whether to rotate to the right (true) or left (false).
+ *
+ * @return The rotated point.
+ *
+ * @throws None.
+ */
 Point rotatePoint(Point p, Point around, bool right)
 {
-    int factor = (right) ? 1 : -1;
+    int factor = right ? 1 : -1;
     Point pointRotated;
 
     pointRotated.x = -1 * factor * (p.y - around.y);
@@ -215,8 +244,16 @@ Point rotatePoint(Point p, Point around, bool right)
     return pointRotated;
 }
 
-void setUpShape(int n)
+/**
+ * Sets up the shape for the given input.
+ *
+ * @param n The index of the shape in the figures array.
+ *
+ * @throws ErrorType If the index is out of bounds.
+ */
+void setUpShape(sf::Sprite &pS, int n, std::array<Point, 4> &a)
 {
+    pS.setTextureRect(sf::IntRect(n * 18, 0, 18, 18));
     for (int i = 0; i < 4; i++)
     {
         a[i].x = figures[n][i] % 2;
@@ -225,6 +262,13 @@ void setUpShape(int n)
     }
 }
 
+/**
+ * Logs the relative square position.
+ *
+ * @param row the row number
+ * @param pPoint the Point object
+ * @param msg the message to be logged
+ */
 void logRelativeSquarePosition(int row, Point pPoint, const char *msg)
 {
     if (row == 0)
