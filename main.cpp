@@ -19,12 +19,10 @@ bool positionOfShapeIsValid(const std::array<Point, 4> &);
 void handleCompletedRows(sf::RenderWindow &window);
 void setUpShape(sf::Sprite &, int, std::array<Point, 4> &);
 
-// Point a[4];
-// Point b[4];
 
 const int M = 30;
 const int N = 18;
-const float offsetX = 25.f;
+const float offsetX = 35.f;
 const float offsetY = 12.f;
 
 int field[M][N] = {0};
@@ -51,7 +49,6 @@ int main(void)
     bool rotateLeft = false;
     int colorNum = 1;
     bool initialised = false;
-    bool keyPressed = false;
     float timer = 0.0f;
     float delay = 0.3f;
 
@@ -71,7 +68,7 @@ int main(void)
     sf::Sprite sFrame(tFrame);
     sf::IntRect rectFrame = sFrame.getTextureRect();
     sf::Vector2u rectSize = window.getSize();
-    // sFrame.setScale(1.5f, 2.f);
+
     std::cout << " width = " << rectFrame.width << " height = " << rectFrame.height << std::endl;
     std::cout << " width = " << rectSize.x << " height = " << rectSize.y << std::endl;
     sf::Sprite sBackground(tBackground);
@@ -113,7 +110,6 @@ int main(void)
                 default:
                     break;
                 }
-                keyPressed = true;
             }
         }
         /* ## <- Move -> ## */
@@ -191,14 +187,11 @@ int main(void)
         window.draw(sBackground);
         for (int y = 0; y < M; y++)
         {
-            bool rowCompleted = true;
             for (int x = 0; x < N; x++)
             {
                 if (field[y][x] == 0)
                 {
-                    rowCompleted = false;
                     continue;
-                    // break;
                 }
 
                 sTiles.setTextureRect(sf::IntRect(field[y][x] * 18, 0, 18, 18));
@@ -216,7 +209,6 @@ int main(void)
             sTiles.setTextureRect(sf::IntRect(colorNum * 18, 0, 18, 18));
             window.draw(sTiles);
         }
-        keyPressed = false;
 
         window.draw(sFrame);
         window.display();
