@@ -15,7 +15,8 @@ void logAbsolutePosition(const sf::Sprite &, int);
 bool arePointsEqual(Point, Point);
 Point rotatePoint(Point, Point);
 Point rotatePoint(Point, Point, bool);
-bool check(const std::array<Point, 4> &);
+bool positionOfShapeIsValid(const std::array<Point, 4> &);
+void handleCompletedRows(sf::RenderWindow &window);
 void setUpShape(sf::Sprite &, int, std::array<Point, 4> &);
 
 // Point a[4];
@@ -23,12 +24,14 @@ void setUpShape(sf::Sprite &, int, std::array<Point, 4> &);
 
 const int M = 30;
 const int N = 18;
+const float offsetX = 25.f;
+const float offsetY = 12.f;
 
 int field[M][N] = {0};
 
 const int figures[8][4] = {
     0, 0, 0, 0, // no shape for index zero
-    1, 3, 5, 7, // Incest (see:Rudi Guiliani)
+    1, 3, 5, 7, // I
     2, 4, 5, 7, // Z
     3, 4, 5, 6, // S
     3, 4, 5, 7, // T
@@ -41,12 +44,12 @@ int main(void)
 {
     std::array<Point, 4> a = {};
     std::array<Point, 4> b = {};
-    srand(time(0));
+    srand((unsigned int)time(0));
     int dx = 0;
     int dy = 0;
     bool rotateRight = false;
     bool rotateLeft = false;
-    int colorNum = 3;
+    int colorNum = 1;
     bool initialised = false;
     bool keyPressed = false;
     float timer = 0.0f;
@@ -54,14 +57,24 @@ int main(void)
 
     sf::Clock clock;
 
-    sf::RenderWindow window(sf::VideoMode(N * 18, M * 18), "Tetris");
+    sf::RenderWindow window(sf::VideoMode((N + 4) * 18, (M + 1) * 18), "Tetris");
 
-    sf::Texture t;
+    sf::Texture tTiles;
+    sf::Texture tFrame;
+    sf::Texture tBackground;
 
-    t.loadFromFile("./images/tiles.png");
+    tTiles.loadFromFile("./images/tiles.png");
+    tFrame.loadFromFile("./images/frame2.png");
+    tBackground.loadFromFile("./images/background2.png");
 
-    sf::Sprite s(t);
-    s.setTextureRect(sf::IntRect(colorNum * 18, 0, 18, 18));
+    sf::Sprite sTiles(tTiles);
+    sf::Sprite sFrame(tFrame);
+    sf::IntRect rectFrame = sFrame.getTextureRect();
+    sf::Vector2u rectSize = window.getSize();
+    // sFrame.setScale(1.5f, 2.f);
+    std::cout << " width = " << rectFrame.width << " height = " << rectFrame.height << std::endl;
+    std::cout << " width = " << rectSize.x << " height = " << rectSize.y << std::endl;
+    sf::Sprite sBackground(tBackground);
 
     while (window.isOpen())
     {
@@ -94,7 +107,8 @@ int main(void)
                     dx = 1;
                     break;
                 case sf::Keyboard::Space:
-                    dy = 1;
+                    // dy = 1;
+                    delay = 0.05f;
                     break;
                 default:
                     break;
@@ -110,9 +124,13 @@ int main(void)
             a[i].y += dy;
         }
 
-        if (!check(a))
+        if (!positionOfShapeIsValid(a))
+        {
             for (int i = 0; i < 4; i++)
+            {
                 a[i] = b[i];
+            }
+        }
 
         /* ## Rotation ## */
         if (rotateRight || rotateLeft)
@@ -123,9 +141,13 @@ int main(void)
             {
                 a[i] = rotatePoint(a[i], p, rotateRight);
             }
-            if (!check(a))
+            if (!positionOfShapeIsValid(a))
+            {
                 for (int i = 0; i < 4; i++)
+                {
                     a[i] = b[i];
+                }
+            }
         }
 
         /* Tick */
@@ -133,73 +155,102 @@ int main(void)
         {
             for (int i = 0; i < 4; i++)
             {
-                logRelativeSquarePosition(0, a[i], "A pre");
-                logRelativeSquarePosition(0, b[i], "B pre");
+                // logRelativeSquarePosition(0, a[i], "A pre");
+                // logRelativeSquarePosition(0, b[i], "B pre");
                 b[i] = a[i];
                 a[i].y++;
-                logRelativeSquarePosition(3, a[i], "A pre");
-                logRelativeSquarePosition(3, b[i], "B pre");
+                // logRelativeSquarePosition(3, a[i], "A pre");
+                // logRelativeSquarePosition(3, b[i], "B pre");
             }
-            if (!check(a))
+
+            if (!positionOfShapeIsValid(a))
             {
                 for (int i = 0; i < 4; i++)
                     field[b[i].y][b[i].x] = colorNum;
 
                 colorNum = 1 + rand() % 7;
-                setUpShape(s, colorNum, a);
+                setUpShape(sTiles, colorNum, a);
             }
             timer = 0.0f;
         }
 
+        handleCompletedRows(window);
+
         if (!initialised)
         {
             initialised = true;
-            setUpShape(s, colorNum, a);
+            setUpShape(sTiles, colorNum, a);
         }
         dx = 0;
         dy = 0;
         rotateRight = false;
         rotateLeft = false;
+        delay = 0.3f;
 
         window.clear(sf::Color::White);
-
+        window.draw(sBackground);
         for (int y = 0; y < M; y++)
         {
+            bool rowCompleted = true;
             for (int x = 0; x < N; x++)
             {
                 if (field[y][x] == 0)
+                {
+                    rowCompleted = false;
                     continue;
+                    // break;
+                }
 
-                s.setTextureRect(sf::IntRect(field[y][x] * 18, 0, 18, 18));
-                s.setPosition((float)x * 18.f, (float)y * 18.f);
-                window.draw(s);
+                sTiles.setTextureRect(sf::IntRect(field[y][x] * 18, 0, 18, 18));
+                sTiles.setPosition((float)x * 18.f, (float)y * 18.f);
+                sTiles.move(offsetX, offsetY);
+                window.draw(sTiles);
             }
         }
 
         for (int i = 0; i < 4; i++)
         {
-            s.setPosition((float)a[i].x * 18.f, (float)a[i].y * 18.f);
-            if (keyPressed)
-                logAbsolutePosition(s, i);
-            s.setTextureRect(sf::IntRect(colorNum * 18, 0, 18, 18));
-            window.draw(s);
+            sTiles.setPosition((float)a[i].x * 18.f, (float)a[i].y * 18.f);
+            sTiles.move(offsetX, offsetY);
+
+            sTiles.setTextureRect(sf::IntRect(colorNum * 18, 0, 18, 18));
+            window.draw(sTiles);
         }
         keyPressed = false;
 
+        window.draw(sFrame);
         window.display();
     }
 
     return 0;
 }
 
-bool check(const std::array<Point, 4> &pointA)
+void handleCompletedRows(sf::RenderWindow &window)
+{
+    int k = M - 1;
+
+    for (int i = M - 1; i > 0; i--)
+    {
+        int counter = 0;
+        for (int j = 0; j < N; j++)
+        {
+            if (field[i][j])
+                counter++;
+            field[k][j] = field[i][j];
+        }
+        if (counter < N)
+            k--;
+    }
+}
+
+bool positionOfShapeIsValid(const std::array<Point, 4> &arrPosition)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (pointA[i].x < 0 || pointA[i].x >= N || pointA[i].y >= M)
+        if (arrPosition[i].x < 0 || arrPosition[i].x >= N || arrPosition[i].y >= M || field[arrPosition[i].y][arrPosition[i].x])
             return false;
-        else if (field[pointA[i].y][pointA[i].x])
-            return false;
+        // else if (field[arrPosition[i].y][arrPosition[i].x])
+        //     return false;
     }
 
     return true;
@@ -258,7 +309,7 @@ void setUpShape(sf::Sprite &pS, int n, std::array<Point, 4> &a)
     {
         a[i].x = figures[n][i] % 2;
         a[i].y = figures[n][i] / 2;
-        logRelativeSquarePosition(i, a[i], "initial");
+        // logRelativeSquarePosition(i, a[i], "initial");
     }
 }
 
@@ -274,7 +325,7 @@ void logRelativeSquarePosition(int row, Point pPoint, const char *msg)
     if (row == 0)
         std::cout << "-START----------" << msg << "-------------" << std::endl;
     std::cout << "a[" << row << "] = (" << pPoint.x << " / " << pPoint.y << ")" << std::endl;
-    // std::cout << "a[" << row << "].y = " << pPoint.y << std::endl;
+
     if (row == 3)
         std::cout << "-END----------" << msg << "-------------" << std::endl;
 }
