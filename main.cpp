@@ -38,6 +38,13 @@ const int figures[8][4] = {
     2, 3, 4, 5  // O
 };
 
+const std::array<std::string, 4> levelsbackground = {
+    "background1.png",
+    "background2.png",
+    "background3.png",
+    "background4.png",
+};
+
 int main(void)
 {
     std::array<Point, 4> a = {};
@@ -62,7 +69,7 @@ int main(void)
 
     tTiles.loadFromFile("./images/tiles.png");
     tFrame.loadFromFile("./images/frame2.png");
-    tBackground.loadFromFile("./images/background2.png");
+    tBackground.loadFromFile("./images/background1.png");
 
     sf::Sprite sTiles(tTiles);
     sf::Sprite sFrame(tFrame);
