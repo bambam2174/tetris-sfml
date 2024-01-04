@@ -1,5 +1,9 @@
 #!/bin/zsh
 
+SCRIPT="$(python -c "import os, sys;print(os.path.realpath('${0}'))")"
+PFAD="$(dirname ${SCRIPT})"
+cd "${PFAD}"
+
 make release
 
 sudo make install
