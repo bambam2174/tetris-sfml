@@ -1,0 +1,6 @@
+#!/bin/zsh
+
+make release
+
+sudo make install
+
